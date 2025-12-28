@@ -4,6 +4,7 @@ import { HStack } from '@/components/ui/hstack';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { BOOKS } from '@/data/books';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
@@ -41,7 +42,15 @@ export default function HomePage() {
                             <Pressable key={book.id} onPress={() => router.push(`/book/${book.id}`)}>
                                 <Box className={`p-4 rounded-xl border border-outline-100 ${colorScheme === 'dark' ? 'bg-background-50' : 'bg-white'} shadow-sm`}>
                                     <HStack space="md">
-                                        <Box className={`w-20 h-28 rounded-md ${book.coverColor} shadow-sm`} />
+                                        {book.image ? (
+                                            <Image
+                                                source={book.image}
+                                                style={{ width: 80, height: 112, borderRadius: 6 }}
+                                                contentFit="cover"
+                                            />
+                                        ) : (
+                                            <Box className={`w-20 h-28 rounded-md ${book.coverColor} shadow-sm`} />
+                                        )}
                                         <VStack className="flex-1 py-1 justify-between">
                                             <Box>
                                                 <Heading size="lg" className="text-typography-900 leading-tight mb-1">{book.title}</Heading>

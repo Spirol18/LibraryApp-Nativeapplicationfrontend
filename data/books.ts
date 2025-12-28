@@ -10,6 +10,7 @@ export interface Book {
     title: string;
     author: string;
     coverColor: string; // Tailwnd class for placeholder cover
+    image?: any; // New field for book cover image
     description: string;
     chapters: Chapter[];
 }
@@ -20,6 +21,7 @@ export const BOOKS: Book[] = [
         title: 'Samayako Rekhachitra',
         author: 'Harihar Khanal',
         coverColor: 'bg-primary-500',
+        image: require('@/assets/images/samayako_rekhachitra.png'),
         description: 'Samayako Rekhachitra by Harihar Khanal is a reflective collection that sketches vivid portraits of time, society, and human experience. Through thoughtful observations and subtle commentary, the book captures changing social realities, personal memories, and cultural moments, encouraging readers to reflect on the past and present.',
         chapters: [
             { id: '101', title: 'Chapter 1: Aakhijhyal', duration: '10:05' },
@@ -44,10 +46,11 @@ export const BOOKS: Book[] = [
     },
     {
         id: '2',
-        title: 'Seto Dharti',
-        author: 'Amar Neupane',
+        title: 'Naaso',
+        author: 'Guruprasad Mainali',
         coverColor: 'bg-secondary-500',
-        description: 'A heart-touching story of a child widow, portraying the social stigma and the life of women in rural Nepal.',
+        image: require('@/assets/images/Naaso.png'),
+        description: 'Naaso is a classic collection of short stories by Guruprasad Mainali, capturing the essence of rural Nepalese life, social values, and human emotions with simplicity and depth.',
         chapters: [
             { id: '201', title: 'Chapter 1', duration: '20:00' },
             { id: '202', title: 'Chapter 2', duration: '22:15' },
@@ -56,10 +59,11 @@ export const BOOKS: Book[] = [
     },
     {
         id: '3',
-        title: 'Karnali Blues',
-        author: 'Buddhisagar',
+        title: 'Basanti',
+        author: 'Diamond Shumsher Rana',
         coverColor: 'bg-tertiary-500',
-        description: 'A novel about a father-son relationship, set in the backdrop of the Karnali region.',
+        image: require('@/assets/images/Basanti.png'),
+        description: 'Basanti is a historical novel by Diamond Shumsher Rana that depicts the life and times of the early Rana period in Nepal. It weaves a story of love, power, and political intrigue during a significant era of Nepalese history.',
         chapters: [
             { id: '301', title: 'Part 1', duration: '25:00' },
             { id: '302', title: 'Part 2', duration: '28:45' },

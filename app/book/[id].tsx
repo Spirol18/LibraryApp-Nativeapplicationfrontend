@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { BOOKS, Chapter } from '@/data/books';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Mic, Play } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
@@ -38,6 +39,14 @@ export default function BookDetails() {
                 <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
                     {/* Header Image Area */}
                     <Box className={`w-full h-64 ${book.coverColor} items-center justify-center relative`}>
+                        {book.image && (
+                            <Image
+                                source={book.image}
+                                style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.3 }}
+                                contentFit="cover"
+                                blurRadius={10}
+                            />
+                        )}
                         <Pressable
                             onPress={() => router.back()}
                             className="absolute top-12 left-4 w-10 h-10 bg-black/20 rounded-full items-center justify-center z-10"
@@ -45,8 +54,17 @@ export default function BookDetails() {
                             <Icon as={ArrowLeft} color="white" />
                         </Pressable>
 
-                        {/* Large Cover Placeholder */}
-                        <Box className="w-32 h-48 bg-white/20 rounded-lg shadow-lg border border-white/30" />
+                        {/* Large Cover Placeholder / Image */}
+                        {book.image ? (
+                            <Image
+                                source={book.image}
+                                style={{ width: 128, height: 192, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}
+                                contentFit="cover"
+                                className="shadow-lg"
+                            />
+                        ) : (
+                            <Box className="w-32 h-48 bg-white/20 rounded-lg shadow-lg border border-white/30" />
+                        )}
                     </Box>
 
                     <Box className="px-5 -mt-8">

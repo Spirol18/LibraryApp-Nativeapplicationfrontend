@@ -8,6 +8,24 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 import '@/global.css';
 
+import { Audio } from 'expo-av';
+
+(async () => {
+  try {
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      staysActiveInBackground: true,
+      playsInSilentModeIOS: true,
+      // interruptionModeIOS: Audio.InterruptionModeIOS.DoNotMix,
+      // interruptionModeAndroid: Audio.InterruptionModeAndroid.DoNotMix,
+      shouldDuckAndroid: true,
+    });
+  } catch (e) {
+    console.error('Failed to set audio mode:', e);
+  }
+})();
+
+
 export const unstable_settings = {
   anchor: '(drawer)',
 };

@@ -28,8 +28,8 @@ export default function HomePage() {
                             <Text className="text-white font-bold text-xl">N</Text>
                         </Box>
                         <VStack>
-                            <Heading size="md" className="text-typography-900">Nepali Audio Library</Heading>
-                            <Text size="xs" className="text-typography-500">Listen anytime, anywhere</Text>
+                            <Heading size="md" className="text-typography-900">SUNN.ai</Heading>
+                            <Text size="xs" className="text-typography-500">Listen to Literary fiction Audio book</Text>
                         </VStack>
                     </HStack>
 

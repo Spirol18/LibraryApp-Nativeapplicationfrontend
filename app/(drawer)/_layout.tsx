@@ -25,9 +25,9 @@ export default function DrawerLayout() {
                 }}
             >
                 <Drawer.Screen
-                    name="index"
+                    name="(tabs)"
                     options={{
-                        title: 'Home',
+                        title: 'Library',
                         headerShown: true,
                         headerTitle: '',
                         headerLeft: () => (

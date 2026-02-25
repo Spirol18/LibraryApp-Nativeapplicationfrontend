@@ -25,7 +25,7 @@ export function Sidebar(props: any) {
                 <VStack space="sm" className="px-2">
                     <DrawerItem
                         label="Home"
-                        onPress={() => router.push('/(drawer)')}
+                        onPress={() => router.push('/(drawer)/(tabs)')}
                     />
                 </VStack>
             </DrawerContentScrollView>

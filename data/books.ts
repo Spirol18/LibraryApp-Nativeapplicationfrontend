@@ -12,6 +12,7 @@ export interface Book {
     coverColor: string; // Tailwnd class for placeholder cover
     image?: any; // New field for book cover image
     description: string;
+    dateAdded: string;
     chapters: Chapter[];
 }
 
@@ -23,6 +24,7 @@ export const BOOKS: Book[] = [
         coverColor: 'bg-primary-500',
         image: require('@/assets/images/samayako_rekhachitra.png'),
         description: 'Samayako Rekhachitra by Harihar Khanal is a reflective collection that sketches vivid portraits of time, society, and human experience. Through thoughtful observations and subtle commentary, the book captures changing social realities, personal memories, and cultural moments, encouraging readers to reflect on the past and present.',
+        dateAdded: '2023-05-15',
         chapters: [
             { id: '101', title: 'Chapter 1: Aakhijhyal', duration: '10:05' },
             { id: '102', title: 'Chapter 2: Aama', duration: '15:20' },
@@ -51,6 +53,7 @@ export const BOOKS: Book[] = [
         coverColor: 'bg-secondary-500',
         image: require('@/assets/images/Naaso.png'),
         description: 'Naaso is a classic collection of short stories by Guruprasad Mainali, capturing the essence of rural Nepalese life, social values, and human emotions with simplicity and depth.',
+        dateAdded: '2022-11-01',
         chapters: [
             { id: '201', title: 'Chapter 1', duration: '20:00' },
             { id: '202', title: 'Chapter 2', duration: '22:15' },
@@ -64,6 +67,7 @@ export const BOOKS: Book[] = [
         coverColor: 'bg-tertiary-500',
         image: require('@/assets/images/Basanti.png'),
         description: 'Basanti is a historical novel by Diamond Shumsher Rana that depicts the life and times of the early Rana period in Nepal. It weaves a story of love, power, and political intrigue during a significant era of Nepalese history.',
+        dateAdded: '2024-01-20',
         chapters: [
             { id: '301', title: 'Part 1', duration: '25:00' },
             { id: '302', title: 'Part 2', duration: '28:45' },
@@ -75,6 +79,7 @@ export const BOOKS: Book[] = [
         author: 'Narayan Wagle',
         coverColor: 'bg-error-500',
         description: 'A story of an artist set during the Nepalese Civil War.',
+        dateAdded: '2023-08-10',
         chapters: [
             { id: '401', title: 'Chapter 1', duration: '14:00' },
             { id: '402', title: 'Chapter 2', duration: '16:30' },

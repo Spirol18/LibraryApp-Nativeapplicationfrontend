@@ -20,6 +20,8 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'books.vertical.fill': 'library-books',
   'arrow.up.doc.fill': 'upload-file',
+  'magnifyingglass': 'search',
+  'arrow.up.arrow.down': 'swap-vert',
 } as IconMapping;
 
 /**

@@ -22,35 +22,35 @@ function PlayPopup({
 
   return (
     <>
-    <Portal isOpen={isOpen}>
-  {/* Overlay */}
-  <Box className="flex-1 bg-black/60 justify-center items-center">
-    {/* Modal Container */}
-    <Box className="w-11/12 p-6 rounded-2xl bg-background-0">
-      
-      {/* Header */}
-      <Box className="flex-row justify-between items-center mb-4">
-        <Text
-          numberOfLines={2}
-          className="text-lg font-semibold text-typography-900 flex-1 pr-4"
-        >
-          {chapter.title}
-        </Text>
+      <Portal isOpen={isOpen}>
+        {/* Overlay */}
+        <Box className="flex-1 bg-black/60 justify-center items-center">
+          {/* Modal Container */}
+          <Box className="w-11/12 p-6 rounded-2xl bg-background-0">
 
-        <Button size="xs"  onPress={onClose}>
-          <ButtonIcon as={X} />
-        </Button>
-      </Box>
+            {/* Header */}
+            <Box className="flex-row justify-between items-center mb-4">
+              <Text
+                numberOfLines={2}
+                className="text-lg font-semibold text-typography-900 flex-1 pr-4"
+              >
+                {chapter.title}
+              </Text>
 
-      {/* Progress Bar */}
-      <Box className="mb-4">
-        <AudioPlayer audioId={"1"} />
-      </Box>
-    </Box>
-  </Box>
-</Portal>
+              <Button size="xs" onPress={onClose}>
+                <ButtonIcon as={X} />
+              </Button>
+            </Box>
 
-  </>
+            {/* Progress Bar */}
+            <Box className="mb-4">
+              <AudioPlayer audioId={chapter.id} />
+            </Box>
+          </Box>
+        </Box>
+      </Portal>
+
+    </>
   );
 }
 

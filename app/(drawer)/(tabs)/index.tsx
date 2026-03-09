@@ -4,20 +4,24 @@ import { HStack } from '@/components/ui/hstack';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
+import { useSession } from '@/context/auth';
 import { BOOKS } from '@/data/books';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { LogOut, User } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, TextInput } from 'react-native';
+import { Modal, Pressable, ScrollView, TextInput } from 'react-native';
 
 export default function HomePage() {
     const { colorScheme } = useColorScheme();
     const router = useRouter();
+    const { signOut } = useSession();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'date' | 'alphabet'>('date');
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     const filteredAndSortedBooks = useMemo(() => {
         let result = BOOKS;
@@ -52,15 +56,45 @@ export default function HomePage() {
                 <Box className="flex-1 px-4 pt-4">
 
                     {/* Header / Brand */}
-                    <HStack className="mb-8 items-center gap-3">
-                        <Box className="w-10 h-10 bg-primary-500 rounded-full items-center justify-center shadow-md">
-                            <Text className="text-white font-bold text-xl">N</Text>
-                        </Box>
-                        <VStack>
-                            <Heading size="md" className="text-typography-900">SUNN.ai</Heading>
-                            <Text size="xs" className="text-typography-500">Listen to Literary fiction Audio book</Text>
-                        </VStack>
+                    <HStack className="mb-8 items-center justify-between">
+                        <HStack className="items-center gap-3">
+                            <Box className="w-10 h-10 bg-primary-500 rounded-full items-center justify-center shadow-md">
+                                <Text className="text-white font-bold text-xl">N</Text>
+                            </Box>
+                            <VStack>
+                                <Heading size="md" className="text-typography-900">SUNN.ai</Heading>
+                                <Text size="xs" className="text-typography-500">Listen to Literary fiction Audio book</Text>
+                            </VStack>
+                        </HStack>
+
+                        <Pressable onPress={() => setIsProfileOpen(true)} className="p-2.5 rounded-full border border-[#313538] bg-[#202325]">
+                            <User color="#FFFFFF" size={20} />
+                        </Pressable>
                     </HStack>
+
+                    {/* Profile Modal */}
+                    <Modal visible={isProfileOpen} transparent={true} animationType="fade" onRequestClose={() => setIsProfileOpen(false)}>
+                        <Pressable className="flex-1 bg-black/60 justify-center items-center" onPress={() => setIsProfileOpen(false)}>
+                            <Pressable className="w-4/5 max-w-[340px] bg-[#202325] border border-[#313538] rounded-3xl p-6 items-center shadow-lg" onPress={(e) => e.stopPropagation()}>
+                                <Box className="w-16 h-16 bg-[#61dafb] rounded-full items-center justify-center mb-4 shadow-md">
+                                    <Text className="text-[#151718] font-bold text-3xl">U</Text>
+                                </Box>
+                                <Heading size="xl" className="text-white mb-1">Library User</Heading>
+                                <Text size="sm" className="text-[#9BA1A6] mb-8 font-medium">user@sunn.ai</Text>
+
+                                <Pressable
+                                    className="w-full bg-[#EF4444]/10 py-3.5 rounded-2xl flex-row justify-center items-center border border-[#EF4444]/20"
+                                    onPress={() => {
+                                        setIsProfileOpen(false);
+                                        signOut();
+                                    }}
+                                >
+                                    <LogOut color="#EF4444" size={20} />
+                                    <Text className="text-[#EF4444] font-semibold text-base ml-2">Log Out</Text>
+                                </Pressable>
+                            </Pressable>
+                        </Pressable>
+                    </Modal>
 
                     <Heading size="2xl" className="mb-6">Welcome Back</Heading>
 

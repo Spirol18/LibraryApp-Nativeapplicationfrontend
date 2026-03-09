@@ -9,8 +9,8 @@ import TrackPlayer, {
 
 
 import { Button, ButtonText } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Text } from "@/components/ui/text";
+import { ProgressBar } from "./ProgressBar";
 
 
 interface AudioPlayerProps {
@@ -24,16 +24,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioId }) => {
   const [error, setError] = React.useState<string | null>(null);
   const [progressMeter, setProgressMeter] = React.useState(0);
 
-  const duration = progress.duration || 0;
-  const position = progress.position || 0;
-  const progressValue = duration > 0 ? (position / duration) * 100 : 0;
+  const durationMillis = (progress.duration || 0) * 1000;
+  const positionMillis = (progress.position || 0) * 1000;
+  const progressValue = durationMillis > 0 ? (positionMillis / durationMillis) * 100 : 0;
 
   React.useEffect(() => {
     const timer = setTimeout(() => setProgressMeter(progressValue), 500);
     return () => clearTimeout(timer);
   }, [progressValue]);
 
-  const audioUrl = `http://localhost:5000/audio/${audioId}`;
+  const audioUrl = `http://localhost:5001/audio/${audioId}`;
 
   React.useEffect(() => {
     let isMounted = true;
@@ -145,18 +145,17 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioId }) => {
     <View style={styles.container}>
       <Button
         onPress={togglePlayback}
-        className="w-full"
+        className="w-full mb-2"
       >
         <ButtonText>
           {playbackState.state === State.Playing ? "Pause" : "Play"}
         </ButtonText>
       </Button>
-      <View style={{ marginVertical: 10, width: '100%' }}>
-        <Progress className='text-white bg-green-500' value={progressMeter} />
-      </View>
       <Button onPress={stopSound} variant="destructive" className="w-full">
         <ButtonText>Stop</ButtonText>
       </Button>
+      {/* Thin ProgressBar placed below player controls */}
+      <ProgressBar progressValue={progressMeter} />
     </View>
   );
 };

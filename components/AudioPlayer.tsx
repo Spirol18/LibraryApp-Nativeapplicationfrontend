@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity } from "react-native";
-import Slider from "@react-native-community/slider";
+import * as React from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import TrackPlayer, {
   Capability,
   State,
   usePlaybackState,
-  useProgress,
-  Event,
-  useTrackPlayerEvents,
-} from "react-native-track-player";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react-native";
+  useProgress
+} from 'react-native-track-player';
+
+
+import { Button, ButtonText } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Text } from "@/components/ui/text";
 
 import { Play, CirclePause, Ban } from "lucide-react-native";
@@ -43,47 +43,108 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioId }) => {
   React.useEffect(() => {
     let isMounted = true;
 
-    const prepare = async () => {
+    const initializePlayer = async () => {
       try {
-        // 1. Just check if player exists, don't keep setting it up
+        setIsInitializing(true);
+        setError(null);
+
+        // Try to setup player, catch error if already initialized
         try {
           await TrackPlayer.setupPlayer();
-        } catch (e) { }
-
-        // 2. Only add the track if it's NOT already the current track
-        const currentTrackIndex = await TrackPlayer.getCurrentTrack();
-        const currentTrack = currentTrackIndex !== null ? await TrackPlayer.getTrack(currentTrackIndex) : null;
-
-        if (!currentTrack || currentTrack.id !== audioId) {
-          await TrackPlayer.reset();
-          await TrackPlayer.add({
-            id: audioId,
-            url: `http://localhost:5001/audio/${audioId}`, // Ensure this URL is correct
-            title: title || "Chapter Audio",
-            artist: "Book Player",
-            artwork: "https://picsum.photos/200", // Placeholder
+          await TrackPlayer.updateOptions({
+            capabilities: [Capability.Play, Capability.Pause, Capability.Stop],
+            compactCapabilities: [Capability.Play, Capability.Pause],
           });
+        } catch (setupError: any) {
+          // If error is about player already being setup, that's fine
+          if (!setupError.message?.includes('already been initialized')) {
+            throw setupError;
+          }
         }
 
-        if (mounted) setIsReady(true);
-      } catch (err) {
-        console.error("Audio Setup Error:", err);
+        // Stop any playing audio
+        await TrackPlayer.pause();
+
+        // Reset queue and add new track
+        await TrackPlayer.reset();
+        await TrackPlayer.add({
+          id: audioId,
+          url: audioUrl,
+          title: 'Track Title',
+          artist: 'Artist Name',
+        });
+
+        if (isMounted) {
+          setIsInitializing(false);
+        }
+      } catch (error: any) {
+        console.error("Error setting up player:", error);
+        if (isMounted) {
+          setError(error.message || 'Failed to load audio');
+          setIsInitializing(false);
+        }
       }
     };
 
-    prepare();
-    return () => { mounted = false; };
-  }, [audioId]);
+    initializePlayer();
 
-  const togglePlay = async () => {
-    if (currentState === State.Playing) {
-      await TrackPlayer.pause();
-    } else {
-      await TrackPlayer.play();
+    return () => {
+      isMounted = false;
+
+      // Cleanup: Stop playback and clear queue when component unmounts
+      const cleanup = async () => {
+        try {
+          await TrackPlayer.pause();
+          await TrackPlayer.reset();
+        } catch (err) {
+          console.error('Cleanup error:', err);
+        }
+      };
+
+      cleanup();
+    };
+  }, [audioId, audioUrl]);
+
+  const togglePlayback = async () => {
+    try {
+      const currentTrack = await TrackPlayer.getActiveTrack();
+      if (currentTrack == null) return;
+
+      if (playbackState.state === State.Paused || playbackState.state === State.Ready) {
+        await TrackPlayer.play();
+      } else {
+        await TrackPlayer.pause();
+      }
+    } catch (err) {
+      console.error('Playback error:', err);
     }
   };
 
-  if (!isReady) return <ActivityIndicator color="#1DB954" />;
+  const stopSound = async () => {
+    try {
+      await TrackPlayer.pause();
+      await TrackPlayer.seekTo(0);
+    } catch (err) {
+      console.error('Stop error:', err);
+    }
+  };
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Error: {error}</Text>
+      </View>
+    );
+  }
+
+  if (isInitializing || playbackState.state === State.Buffering) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Loading Audio...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -103,14 +164,18 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioId }) => {
       </Button>
     </View>
   );
-}
+};
 
-// Internal styles to keep it independent of the Box components
 const styles = StyleSheet.create({
-  container: { width: '100%', alignItems: 'center' },
-  slider: { width: '110%', height: 40 }, // Slightly wider to bleed to edges
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 10 },
-  timeLabel: { fontSize: 12, color: '#666' },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 30 },
-  playCircle: { backgroundColor: '#000', width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' }
+  container: {
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+  },
 });
+
+export default AudioPlayer;

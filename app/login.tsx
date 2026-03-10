@@ -7,9 +7,10 @@ import { useSession } from '@/context/auth';
 import { useRouter } from 'expo-router';
 import { BookHeadphones, Lock, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-const { width } = Dimensions.get('window');
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
+const SIGNIN_ENDPOINT = process.env.EXPO_PUBLIC_SIGNIN_ENDPOINT ?? (API_BASE_URL ? `${API_BASE_URL}/signin` : '');
 
 export default function LoginScreen() {
     const { signIn } = useSession();
@@ -17,16 +18,97 @@ export default function LoginScreen() {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    const extractMessage = (payload: unknown): string | null => {
+        if (!payload || typeof payload !== 'object') return null;
+        const candidates = ['message', 'error', 'detail'] as const;
+        for (const key of candidates) {
+            const value = (payload as Record<string, unknown>)[key];
+            if (typeof value === 'string' && value.trim()) return value.trim();
+        }
+        return null;
+    };
 
     const handleLogin = async () => {
-        if (!email || !password) return;
+        const normalizedEmail = email.trim().toLowerCase();
+
+        if (!normalizedEmail || !password) {
+            setError('Please enter both email and password.');
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setError('Invalid email format.');
+            return;
+        }
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters long.');
+            return;
+        }
+        if (!SIGNIN_ENDPOINT) {
+            setError('Signin endpoint is not configured. Set EXPO_PUBLIC_API_BASE_URL or EXPO_PUBLIC_SIGNIN_ENDPOINT.');
+            return;
+        }
+
+        setError('');
+        setSuccess('');
         setLoading(true);
-        // Simulate API call
-        setTimeout(async () => {
-            await signIn('fake-token-123');
-            setLoading(false);
+
+        try {
+            const response = await fetch(SIGNIN_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: normalizedEmail,
+                    password,
+                }),
+            });
+
+            const rawBody = await response.text();
+            let payload: unknown = null;
+            if (rawBody) {
+                try {
+                    payload = JSON.parse(rawBody);
+                } catch {
+                    payload = null;
+                }
+            }
+
+            if (!response.ok) {
+                const backendMessage = extractMessage(payload);
+                if (backendMessage) {
+                    setError(backendMessage);
+                    return;
+                }
+
+                if (response.status === 401) {
+                    setError('Invalid email or password.');
+                    return;
+                }
+                if (response.status >= 500) {
+                    setError('Server error. Please try again later.');
+                    return;
+                }
+                setError('Signin failed. Please try again.');
+                return;
+            }
+
+            const backendMessage = extractMessage(payload);
+            const token =
+                payload && typeof payload === 'object' && typeof (payload as Record<string, unknown>).token === 'string'
+                    ? ((payload as Record<string, unknown>).token as string)
+                    : `session:${normalizedEmail}`;
+
+            await signIn(token);
+            setSuccess(backendMessage ?? 'Authentication successful.');
             router.replace('/');
-        }, 1500);
+        } catch (e) {
+            console.error('Signin request failed:', e);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -67,7 +149,10 @@ export default function LoginScreen() {
                                     placeholder="Enter your email"
                                     placeholderTextColor="#687076"
                                     value={email}
-                                    onChangeText={setEmail}
+                                    onChangeText={(value) => {
+                                        setEmail(value);
+                                        if (error) setError('');
+                                    }}
                                     style={styles.input}
                                     autoCapitalize="none"
                                     keyboardType="email-address"
@@ -85,7 +170,10 @@ export default function LoginScreen() {
                                     placeholderTextColor="#687076"
                                     secureTextEntry
                                     value={password}
-                                    onChangeText={setPassword}
+                                    onChangeText={(value) => {
+                                        setPassword(value);
+                                        if (error) setError('');
+                                    }}
                                     style={styles.input}
                                     autoCapitalize="none"
                                 />
@@ -94,6 +182,13 @@ export default function LoginScreen() {
                                 Forgot Password?
                             </Text>
                         </VStack>
+
+                        {error ? (
+                            <Text className="text-red-400 text-sm">{error}</Text>
+                        ) : null}
+                        {success ? (
+                            <Text className="text-green-400 text-sm">{success}</Text>
+                        ) : null}
 
                         {/* Action Button */}
                         <View className="mt-4">
@@ -116,7 +211,7 @@ export default function LoginScreen() {
 
                         {/* Bottom Footer */}
                         <View className="flex-row justify-center items-center mt-6">
-                            <Text className="text-[#9BA1A6] text-sm">Don't have an account? </Text>
+                            <Text className="text-[#9BA1A6] text-sm">Don&apos;t have an account? </Text>
                             <Text
                                 className="text-[#61dafb] font-semibold text-sm"
                                 onPress={() => router.replace('/signup')}

@@ -16,6 +16,7 @@
     "@gluestack-ui/core": "^3.0.12",
     "@gluestack-ui/utils": "^3.0.13",
     "@legendapp/motion": "^2.5.3",
+    "@react-native-community/slider": "^5.1.2",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/drawer": "^7.7.10",
     "@react-navigation/elements": "^2.6.3",

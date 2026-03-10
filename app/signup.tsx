@@ -9,6 +9,9 @@ import { BookHeadphones, Lock, Mail, User } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
+const SIGNUP_ENDPOINT = process.env.EXPO_PUBLIC_SIGNUP_ENDPOINT ?? (API_BASE_URL ? `${API_BASE_URL}/signup` : '');
+
 export default function SignupScreen() {
     const { signIn } = useSession();
     const router = useRouter();
@@ -16,16 +19,107 @@ export default function SignupScreen() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    const extractMessage = (payload: unknown): string | null => {
+        if (!payload || typeof payload !== 'object') return null;
+        const candidates = ['message', 'error', 'detail'] as const;
+        for (const key of candidates) {
+            const value = (payload as Record<string, unknown>)[key];
+            if (typeof value === 'string' && value.trim()) return value.trim();
+        }
+        return null;
+    };
 
     const handleSignup = async () => {
-        if (!email || !password || !name) return;
+        const trimmedName = name.trim();
+        const normalizedEmail = email.trim().toLowerCase();
+
+        if (!trimmedName || !normalizedEmail || !password) {
+            setError('Please fill in name, email, and password.');
+            return;
+        }
+        if (trimmedName.length < 2) {
+            setError('Name must be at least 2 characters long.');
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            setError('Invalid email format.');
+            return;
+        }
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters long.');
+            return;
+        }
+        if (!SIGNUP_ENDPOINT) {
+            setError('Signup endpoint is not configured. Set EXPO_PUBLIC_API_BASE_URL or EXPO_PUBLIC_SIGNUP_ENDPOINT.');
+            return;
+        }
+
+        setError('');
+        setSuccess('');
         setLoading(true);
-        // Simulate API call for registration
-        setTimeout(async () => {
-            await signIn('fake-token-123'); // Directly signing in after registration
+
+        try {
+            const response = await fetch(SIGNUP_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: trimmedName,
+                    email: normalizedEmail,
+                    password,
+                }),
+            });
+
+            const rawBody = await response.text();
+            let payload: unknown = null;
+            if (rawBody) {
+                try {
+                    payload = JSON.parse(rawBody);
+                } catch {
+                    payload = null;
+                }
+            }
+
+            if (!response.ok) {
+                const backendMessage = extractMessage(payload);
+                if (backendMessage) {
+                    setError(backendMessage);
+                    return;
+                }
+
+                if (response.status === 409) {
+                    setError('User already exists.');
+                    return;
+                }
+                if (response.status >= 500) {
+                    setError('Server error. Please try again later.');
+                    return;
+                }
+                setError('Signup failed. Please verify your details and try again.');
+                return;
+            }
+
+            const token =
+                payload && typeof payload === 'object' && typeof (payload as Record<string, unknown>).token === 'string'
+                    ? ((payload as Record<string, unknown>).token as string)
+                    : '';
+
+            if (token) {
+                await signIn(token);
+                router.replace('/');
+                return;
+            }
+
+            setSuccess('Account created successfully. Please sign in.');
+            router.replace('/login');
+        } catch (e) {
+            console.error('Signup request failed:', e);
+            setError('Network error. Please check your connection and try again.');
+        } finally {
             setLoading(false);
-            router.replace('/');
-        }, 1500);
+        }
     };
 
     return (
@@ -66,7 +160,10 @@ export default function SignupScreen() {
                                     placeholder="Enter your full name"
                                     placeholderTextColor="#687076"
                                     value={name}
-                                    onChangeText={setName}
+                                    onChangeText={(value) => {
+                                        setName(value);
+                                        if (error) setError('');
+                                    }}
                                     style={styles.input}
                                     autoCapitalize="words"
                                 />
@@ -81,7 +178,10 @@ export default function SignupScreen() {
                                     placeholder="Enter your email"
                                     placeholderTextColor="#687076"
                                     value={email}
-                                    onChangeText={setEmail}
+                                    onChangeText={(value) => {
+                                        setEmail(value);
+                                        if (error) setError('');
+                                    }}
                                     style={styles.input}
                                     autoCapitalize="none"
                                     keyboardType="email-address"
@@ -99,12 +199,22 @@ export default function SignupScreen() {
                                     placeholderTextColor="#687076"
                                     secureTextEntry
                                     value={password}
-                                    onChangeText={setPassword}
+                                    onChangeText={(value) => {
+                                        setPassword(value);
+                                        if (error) setError('');
+                                    }}
                                     style={styles.input}
                                     autoCapitalize="none"
                                 />
                             </View>
                         </VStack>
+
+                        {error ? (
+                            <Text className="text-red-400 text-sm">{error}</Text>
+                        ) : null}
+                        {success ? (
+                            <Text className="text-green-400 text-sm">{success}</Text>
+                        ) : null}
 
                         {/* Action Button */}
                         <View className="mt-4">

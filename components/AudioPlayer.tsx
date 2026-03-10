@@ -1,175 +1,117 @@
-import * as React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, ActivityIndicator, Dimensions, TouchableOpacity } from "react-native";
+import Slider from "@react-native-community/slider";
 import TrackPlayer, {
   Capability,
   State,
   usePlaybackState,
-  useProgress
-} from 'react-native-track-player';
-
-
-import { Button, ButtonText } from "@/components/ui/button";
+  useProgress,
+  Event,
+  useTrackPlayerEvents,
+} from "react-native-track-player";
+import { Play, Pause, SkipBack, SkipForward } from "lucide-react-native";
 import { Text } from "@/components/ui/text";
-import { ProgressBar } from "./ProgressBar";
+import { Button } from "@/components/ui/button";
 
+const { width } = Dimensions.get("window");
 
-interface AudioPlayerProps {
-  audioId: string;
-}
-
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioId }) => {
+export default function AudioPlayer({ audioId, title }: { audioId: string, title?: string }) {
   const playbackState = usePlaybackState();
   const progress = useProgress();
-  const [isInitializing, setIsInitializing] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-  const [progressMeter, setProgressMeter] = React.useState(0);
+  const [isReady, setIsReady] = useState(false);
 
-  const durationMillis = (progress.duration || 0) * 1000;
-  const positionMillis = (progress.position || 0) * 1000;
-  const progressValue = durationMillis > 0 ? (positionMillis / durationMillis) * 100 : 0;
+  // Modern state check
+  const currentState = (playbackState as any).state ?? playbackState;
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => setProgressMeter(progressValue), 500);
-    return () => clearTimeout(timer);
-  }, [progressValue]);
+  useEffect(() => {
+    let mounted = true;
 
-  const audioUrl = `http://localhost:5001/audio/${audioId}`;
-
-  React.useEffect(() => {
-    let isMounted = true;
-
-    const initializePlayer = async () => {
+    const prepare = async () => {
       try {
-        setIsInitializing(true);
-        setError(null);
-
-        // Try to setup player, catch error if already initialized
+        // 1. Just check if player exists, don't keep setting it up
         try {
           await TrackPlayer.setupPlayer();
-          await TrackPlayer.updateOptions({
-            capabilities: [Capability.Play, Capability.Pause, Capability.Stop],
-            compactCapabilities: [Capability.Play, Capability.Pause],
-          });
-        } catch (setupError: any) {
-          // If error is about player already being setup, that's fine
-          if (!setupError.message?.includes('already been initialized')) {
-            throw setupError;
-          }
-        }
+        } catch (e) { }
 
-        // Stop any playing audio
-        await TrackPlayer.pause();
+        // 2. Only add the track if it's NOT already the current track
+        const currentTrackIndex = await TrackPlayer.getCurrentTrack();
+        const currentTrack = currentTrackIndex !== null ? await TrackPlayer.getTrack(currentTrackIndex) : null;
 
-        // Reset queue and add new track
-        await TrackPlayer.reset();
-        await TrackPlayer.add({
-          id: audioId,
-          url: audioUrl,
-          title: 'Track Title',
-          artist: 'Artist Name',
-        });
-
-        if (isMounted) {
-          setIsInitializing(false);
-        }
-      } catch (error: any) {
-        console.error("Error setting up player:", error);
-        if (isMounted) {
-          setError(error.message || 'Failed to load audio');
-          setIsInitializing(false);
-        }
-      }
-    };
-
-    initializePlayer();
-
-    return () => {
-      isMounted = false;
-
-      // Cleanup: Stop playback and clear queue when component unmounts
-      const cleanup = async () => {
-        try {
-          await TrackPlayer.pause();
+        if (!currentTrack || currentTrack.id !== audioId) {
           await TrackPlayer.reset();
-        } catch (err) {
-          console.error('Cleanup error:', err);
+          await TrackPlayer.add({
+            id: audioId,
+            url: `http://localhost:5001/audio/${audioId}`, // Ensure this URL is correct
+            title: title || "Chapter Audio",
+            artist: "Book Player",
+            artwork: "https://picsum.photos/200", // Placeholder
+          });
         }
-      };
 
-      cleanup();
-    };
-  }, [audioId, audioUrl]);
-
-  const togglePlayback = async () => {
-    try {
-      const currentTrack = await TrackPlayer.getActiveTrack();
-      if (currentTrack == null) return;
-
-      if (playbackState.state === State.Paused || playbackState.state === State.Ready) {
-        await TrackPlayer.play();
-      } else {
-        await TrackPlayer.pause();
+        if (mounted) setIsReady(true);
+      } catch (err) {
+        console.error("Audio Setup Error:", err);
       }
-    } catch (err) {
-      console.error('Playback error:', err);
-    }
-  };
+    };
 
-  const stopSound = async () => {
-    try {
+    prepare();
+    return () => { mounted = false; };
+  }, [audioId]);
+
+  const togglePlay = async () => {
+    if (currentState === State.Playing) {
       await TrackPlayer.pause();
-      await TrackPlayer.seekTo(0);
-    } catch (err) {
-      console.error('Stop error:', err);
+    } else {
+      await TrackPlayer.play();
     }
   };
 
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Error: {error}</Text>
-      </View>
-    );
-  }
-
-  if (isInitializing || playbackState.state === State.Buffering) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading Audio...</Text>
-      </View>
-    );
-  }
+  if (!isReady) return <ActivityIndicator color="#1DB954" />;
 
   return (
     <View style={styles.container}>
-      <Button
-        onPress={togglePlayback}
-        className="w-full mb-2"
-      >
-        <ButtonText>
-          {playbackState.state === State.Playing ? "Pause" : "Play"}
-        </ButtonText>
-      </Button>
-      <Button onPress={stopSound} variant="destructive" className="w-full">
-        <ButtonText>Stop</ButtonText>
-      </Button>
-      {/* Thin ProgressBar placed below player controls */}
-      <ProgressBar progressValue={progressMeter} />
+      {/* Small Compact Scrubber */}
+      <Slider
+        style={styles.slider}
+        minimumValue={0}
+        maximumValue={progress.duration}
+        value={progress.position}
+        minimumTrackTintColor="#1DB954"
+        maximumTrackTintColor="#333"
+        thumbTintColor="#1DB954"
+        onSlidingComplete={TrackPlayer.seekTo}
+      />
+
+      <View style={styles.timeRow}>
+        <Text style={styles.timeLabel}>{Math.floor(progress.position / 60)}:{(progress.position % 60).toFixed(0).padStart(2, '0')}</Text>
+        <Text style={styles.timeLabel}>{Math.floor(progress.duration / 60)}:{(progress.duration % 60).toFixed(0).padStart(2, '0')}</Text>
+      </View>
+
+      <View style={styles.controls}>
+        <TouchableOpacity onPress={() => TrackPlayer.seekTo(progress.position - 10)}>
+          <SkipBack size={24} color="#000" />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={togglePlay} style={styles.playCircle}>
+          {currentState === State.Playing ?
+            <Pause size={28} color="#fff" fill="#fff" /> :
+            <Play size={28} color="#fff" fill="#fff" style={{ marginLeft: 4 }} />}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => TrackPlayer.seekTo(progress.position + 10)}>
+          <SkipForward size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
-};
+}
 
+// Internal styles to keep it independent of the Box components
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-  },
+  container: { width: '100%', alignItems: 'center' },
+  slider: { width: '110%', height: 40 }, // Slightly wider to bleed to edges
+  timeRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 10 },
+  timeLabel: { fontSize: 12, color: '#666' },
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 30 },
+  playCircle: { backgroundColor: '#000', width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center' }
 });
-
-export default AudioPlayer;

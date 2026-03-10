@@ -84,9 +84,8 @@ export default function BookDetails() {
           <Box className="px-5 -mt-8">
             {/* Title Card */}
             <Box
-              className={`p-5 rounded-2xl ${
-                colorScheme === "dark" ? "bg-background-50" : "bg-white"
-              } shadow-lg border border-outline-100`}
+              className={`p-5 rounded-2xl ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
+                } shadow-lg border border-outline-100`}
             >
               <Heading size="2xl" className="text-center mb-1">
                 {book.title}
@@ -99,9 +98,8 @@ export default function BookDetails() {
               <HStack className="bg-background-100 rounded-full p-1 self-center w-full max-w-[200px] shadow-inner">
                 <Pressable
                   onPress={() => setVoice("Male")}
-                  className={`flex-1 py-2 rounded-full items-center justify-center ${
-                    voice === "Male" ? "bg-white shadow-sm" : ""
-                  }`}
+                  className={`flex-1 py-2 rounded-full items-center justify-center ${voice === "Male" ? "bg-white shadow-sm" : ""
+                    }`}
                 >
                   <HStack space="xs" className="items-center">
                     <Icon
@@ -115,11 +113,10 @@ export default function BookDetails() {
                     />
                     <Text
                       size="xs"
-                      className={`font-bold ${
-                        voice === "Male"
-                          ? "text-primary-500"
-                          : "text-typography-400"
-                      }`}
+                      className={`font-bold ${voice === "Male"
+                        ? "text-primary-500"
+                        : "text-typography-400"
+                        }`}
                     >
                       Male
                     </Text>
@@ -127,9 +124,8 @@ export default function BookDetails() {
                 </Pressable>
                 <Pressable
                   onPress={() => setVoice("Female")}
-                  className={`flex-1 py-2 rounded-full items-center justify-center ${
-                    voice === "Female" ? "bg-white shadow-sm" : ""
-                  }`}
+                  className={`flex-1 py-2 rounded-full items-center justify-center ${voice === "Female" ? "bg-white shadow-sm" : ""
+                    }`}
                 >
                   <HStack space="xs" className="items-center">
                     <Icon
@@ -143,11 +139,10 @@ export default function BookDetails() {
                     />
                     <Text
                       size="xs"
-                      className={`font-bold ${
-                        voice === "Female"
-                          ? "text-secondary-500"
-                          : "text-typography-400"
-                      }`}
+                      className={`font-bold ${voice === "Female"
+                        ? "text-secondary-500"
+                        : "text-typography-400"
+                        }`}
                     >
                       Female
                     </Text>
@@ -198,14 +193,14 @@ function ChapterItem({
   index: number;
   colorScheme: any;
 }) {
-//   const [activeChapter, setActiveChapter] = React.useState<Chapter | null>(null);
+  //   const [activeChapter, setActiveChapter] = React.useState<Chapter | null>(null);
   const [isOpen, setOpen] = useState(false);
 
   useEffect(() => {
     console.log(isOpen);
   }, [isOpen]);
 
-  const onPlay=() => {
+  const onPlay = () => {
     setOpen(!isOpen)
   }
 
@@ -218,9 +213,8 @@ function ChapterItem({
       />
       <Pressable>
         <Box
-          className={`p-4 rounded-xl border border-outline-100 ${
-            colorScheme === "dark" ? "bg-background-50" : "bg-white"
-          } flex-row items-center justify-between`}
+          className={`p-4 rounded-xl border border-outline-100 ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
+            } flex-row items-center justify-between`}
         >
           <HStack space="md" className="items-center flex-1">
             <Box className="w-8 h-8 rounded-full bg-background-100 items-center justify-center">
@@ -240,9 +234,9 @@ function ChapterItem({
             size="sm"
             action="secondary"
             className="rounded-full w-10 h-10 p-0 items-center justify-center"
-              onPress={onPlay}
+            onPress={onPlay}
           >
-            <ButtonIcon as={Play} />
+            <Play className="px-2 text-white border border-outline-100 rounded-full size-10 overflow-hidden p-1" />
           </Button>
         </Box>
       </Pressable>

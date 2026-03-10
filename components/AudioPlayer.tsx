@@ -12,6 +12,8 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Text } from "@/components/ui/text";
 
+import { Play, CirclePause, Ban } from "lucide-react-native";
+
 
 interface AudioPlayerProps {
   audioId: string;
@@ -33,7 +35,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioId }) => {
     return () => clearTimeout(timer);
   }, [progressValue]);
 
-  const audioUrl = `http://localhost:5000/audio/${audioId}`;
+  const expo_backend_url = process.env.expo_backend_url;
+  console.log(audioId);
+  console.log(expo_backend_url);
+  const audioUrl = `http://127.0.0.1:5000/audio/${audioId}`;
 
   React.useEffect(() => {
     let isMounted = true;
@@ -148,14 +153,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioId }) => {
         className="w-full"
       >
         <ButtonText>
-          {playbackState.state === State.Playing ? "Pause" : "Play"}
+          {playbackState.state === State.Playing ? <CirclePause size={20} className="text-white bg-green-500 rounded-full size-10 overflow-hidden p-1" /> : <Play size={20} className="text-white bg-green-500 rounded-full size-10 overflow-hidden p-1" />}
         </ButtonText>
       </Button>
       <View style={{ marginVertical: 10, width: '100%' }}>
         <Progress className='text-white bg-green-500' value={progressMeter} />
       </View>
       <Button onPress={stopSound} variant="destructive" className="w-full">
-        <ButtonText>Stop</ButtonText>
+        <ButtonText><Ban className='bg-red-500 text-white hover:bg-red-600s size-10 overflow-hidden rounded-full p-1' size={20} /></ButtonText>
       </Button>
     </View>
   );

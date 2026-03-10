@@ -11,7 +11,7 @@ import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Mic, Play } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, ScrollView } from "react-native";
 
 export default function BookDetails() {
@@ -20,7 +20,12 @@ export default function BookDetails() {
   const { colorScheme } = useColorScheme();
 
   const book = BOOKS.find((b) => b.id === id);
+
   const [voice, setVoice] = useState<"Male" | "Female">("Male");
+
+  // Global popup state
+  const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
+  const [isOpen, setOpen] = useState(false);
 
   if (!book) {
     return (
@@ -33,12 +38,19 @@ export default function BookDetails() {
     );
   }
 
+  const handlePlay = (chapter: Chapter) => {
+    setActiveChapter(chapter);
+    setOpen(true);
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
+
       <Box className="flex-1 bg-background-0">
-        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-          {/* Header Image Area */}
+        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+
+          {/* Header Image */}
           <Box
             className={`w-full h-64 ${book.coverColor} items-center justify-center relative`}
           >
@@ -55,6 +67,7 @@ export default function BookDetails() {
                 blurRadius={10}
               />
             )}
+
             <Pressable
               onPress={() => router.back()}
               className="absolute top-12 left-4 w-10 h-10 bg-black/20 rounded-full items-center justify-center z-10"
@@ -62,7 +75,6 @@ export default function BookDetails() {
               <Icon as={ArrowLeft} color="white" />
             </Pressable>
 
-            {/* Large Cover Placeholder / Image */}
             {book.image ? (
               <Image
                 source={book.image}
@@ -74,31 +86,32 @@ export default function BookDetails() {
                   borderColor: "rgba(255,255,255,0.3)",
                 }}
                 contentFit="cover"
-                className="shadow-lg"
               />
             ) : (
-              <Box className="w-32 h-48 bg-white/20 rounded-lg shadow-lg border border-white/30" />
+              <Box className="w-32 h-48 bg-white/20 rounded-lg border border-white/30" />
             )}
           </Box>
 
           <Box className="px-5 -mt-8">
-            {/* Title Card */}
+
+            {/* Title */}
             <Box
               className={`p-5 rounded-2xl ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
-                } shadow-lg border border-outline-100`}
+                } border border-outline-100`}
             >
               <Heading size="2xl" className="text-center mb-1">
                 {book.title}
               </Heading>
+
               <Text className="text-center text-typography-500 font-medium mb-4">
                 {book.author}
               </Text>
 
               {/* Voice Toggle */}
-              <HStack className="bg-background-100 rounded-full p-1 self-center w-full max-w-[200px] shadow-inner">
+              <HStack className="bg-background-100 rounded-full p-1 self-center w-full max-w-[200px]">
                 <Pressable
                   onPress={() => setVoice("Male")}
-                  className={`flex-1 py-2 rounded-full items-center justify-center ${voice === "Male" ? "bg-white shadow-sm" : ""
+                  className={`flex-1 py-2 rounded-full items-center ${voice === "Male" ? "bg-white" : ""
                     }`}
                 >
                   <HStack space="xs" className="items-center">
@@ -111,20 +124,15 @@ export default function BookDetails() {
                           : "text-typography-400"
                       }
                     />
-                    <Text
-                      size="xs"
-                      className={`font-bold ${voice === "Male"
-                        ? "text-primary-500"
-                        : "text-typography-400"
-                        }`}
-                    >
+                    <Text size="xs" className="font-bold">
                       Male
                     </Text>
                   </HStack>
                 </Pressable>
+
                 <Pressable
                   onPress={() => setVoice("Female")}
-                  className={`flex-1 py-2 rounded-full items-center justify-center ${voice === "Female" ? "bg-white shadow-sm" : ""
+                  className={`flex-1 py-2 rounded-full items-center ${voice === "Female" ? "bg-white" : ""
                     }`}
                 >
                   <HStack space="xs" className="items-center">
@@ -137,13 +145,7 @@ export default function BookDetails() {
                           : "text-typography-400"
                       }
                     />
-                    <Text
-                      size="xs"
-                      className={`font-bold ${voice === "Female"
-                        ? "text-secondary-500"
-                        : "text-typography-400"
-                        }`}
-                    >
+                    <Text size="xs" className="font-bold">
                       Female
                     </Text>
                   </HStack>
@@ -151,20 +153,24 @@ export default function BookDetails() {
               </HStack>
             </Box>
 
+            {/* Description */}
             <VStack space="lg" className="mt-6">
               <Box>
                 <Heading size="md" className="mb-2">
                   Synopsis
                 </Heading>
+
                 <Text className="text-typography-600 leading-6">
                   {book.description}
                 </Text>
               </Box>
 
+              {/* Chapters */}
               <Box>
                 <Heading size="md" className="mb-3">
                   Chapters
                 </Heading>
+
                 <VStack space="md">
                   {book.chapters.map((chapter, index) => (
                     <ChapterItem
@@ -172,6 +178,7 @@ export default function BookDetails() {
                       chapter={chapter}
                       index={index}
                       colorScheme={colorScheme}
+                      onPlay={handlePlay}
                     />
                   ))}
                 </VStack>
@@ -179,6 +186,13 @@ export default function BookDetails() {
             </VStack>
           </Box>
         </ScrollView>
+
+        {/* SINGLE POPUP */}
+        <PlayPopup
+          chapter={activeChapter}
+          isOpen={isOpen}
+          onClose={() => setOpen(false)}
+        />
       </Box>
     </>
   );
@@ -188,58 +202,44 @@ function ChapterItem({
   chapter,
   index,
   colorScheme,
+  onPlay,
 }: {
   chapter: Chapter;
   index: number;
   colorScheme: any;
+  onPlay: (chapter: Chapter) => void;
 }) {
-  //   const [activeChapter, setActiveChapter] = React.useState<Chapter | null>(null);
-  const [isOpen, setOpen] = useState(false);
-
-  useEffect(() => {
-    console.log(isOpen);
-  }, [isOpen]);
-
-  const onPlay = () => {
-    setOpen(!isOpen)
-  }
-
   return (
-    <>
-      <PlayPopup
-        chapter={chapter}
-        isOpen={!!isOpen}
-        onClose={() => setOpen(!isOpen)}
-      />
-      <Pressable>
-        <Box
-          className={`p-4 rounded-xl border border-outline-100 ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
-            } flex-row items-center justify-between`}
-        >
-          <HStack space="md" className="items-center flex-1">
-            <Box className="w-8 h-8 rounded-full bg-background-100 items-center justify-center">
-              <Text className="font-bold text-typography-500">{index + 1}</Text>
-            </Box>
-            <VStack>
-              <Text className="font-bold text-typography-900">
-                {chapter.title}
-              </Text>
-              <Text size="xs" className="text-typography-400">
-                {chapter.duration}
-              </Text>
-            </VStack>
-          </HStack>
+    <Pressable>
+      <Box
+        className={`p-4 rounded-xl border border-outline-100 ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
+          } flex-row items-center justify-between`}
+      >
+        <HStack space="md" className="items-center flex-1">
+          <Box className="w-8 h-8 rounded-full bg-background-100 items-center justify-center">
+            <Text className="font-bold text-typography-500">{index + 1}</Text>
+          </Box>
 
-          <Button
-            size="sm"
-            action="secondary"
-            className="rounded-full w-10 h-10 p-0 items-center justify-center"
-            onPress={onPlay}
-          >
-            <Play className="px-2 text-white border border-outline-100 rounded-full size-10 overflow-hidden p-1" />
-          </Button>
-        </Box>
-      </Pressable>
-    </>
+          <VStack>
+            <Text className="font-bold text-typography-900">
+              {chapter.title}
+            </Text>
+
+            <Text size="xs" className="text-typography-400">
+              {chapter.duration}
+            </Text>
+          </VStack>
+        </HStack>
+
+        <Button
+          size="sm"
+          action="secondary"
+          className="rounded-full w-10 h-10 p-0 items-center justify-center"
+          onPress={() => onPlay(chapter)}
+        >
+          <ButtonIcon as={Play} />
+        </Button>
+      </Box>
+    </Pressable>
   );
 }

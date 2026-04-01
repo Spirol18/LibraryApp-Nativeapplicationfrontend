@@ -1,4 +1,5 @@
 import { Box } from '@/components/ui/box';
+import { Card } from '@/components/ui/card';
 import { Heading } from '@/components/ui/heading';
 import { HStack } from '@/components/ui/hstack';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -11,9 +12,146 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LogOut, User } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Modal, Pressable, ScrollView, TextInput } from 'react-native';
 
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5001';
+
+interface CurrentBook {
+    id: string; // chapter ID
+    bookId: string;
+    chapterId: string;
+    title: string;
+    author: string;
+    progress: number;
+    timestamp?: number;
+    image: any;
+}
+
+export const getBookByAudioId = (audioId: string) => {
+    // 1. Find the book that contains a chapter with the matching ID
+    const foundBook = BOOKS.find(book =>
+        book.chapters.some(chapter => chapter.id === audioId)
+    );
+
+    if (!foundBook) return null;
+
+    // 2. Extract the specific chapter from that book
+    const foundChapter = foundBook.chapters.find(chapter => chapter.id === audioId);
+
+    return {
+        book: foundBook,
+        chapter: foundChapter
+    };
+};
+
+function ContinuePlayingSection({ userEmail }: { userEmail: string }) {
+    const [book, setBook] = useState<CurrentBook | null>(null);
+    const [loading, setLoading] = useState(true);
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!userEmail) {
+            setLoading(false);
+            return;
+        }
+
+        // We append the email as a query parameter as required by your Flask backend
+        fetch(`${API_BASE_URL}/getcurrentbook?email=${encodeURIComponent(userEmail)}`)
+            .then((res) => res.json())
+            .then((data) => {
+                // If backend returns {"id": null}, data.id will be falsy
+                if (data && data.id) {
+                    const bookData = getBookByAudioId(data.id);
+                    const book: CurrentBook = {
+                        id: data.id,
+                        bookId: bookData?.book.id || "",
+                        chapterId: bookData?.chapter?.id || "",
+                        title: `${bookData?.book.title} - ${bookData?.chapter!.title}`,
+                        author: bookData?.book.author ?? "Unknown Author",
+                        progress: data.progress,
+                        timestamp: data.timestamp,
+                        image: bookData?.book.image,
+                    }
+
+                    setBook(book);
+                } else {
+                    setBook(null);
+                }
+            })
+            .catch((err) => {
+                console.error("Error fetching current book:", err);
+                setBook(null);
+            })
+            .finally(() => setLoading(false));
+    }, [userEmail]);
+
+    // Requirement: "if there is no audio files than dont show any things"
+    if (loading || !book || !book.id) {
+        return null;
+    }
+
+    const pct = Math.round(book.progress * 100);
+
+    return (
+        <Box className="px-4 py-3">
+            <Pressable
+                onPress={() => {
+                    const params = new URLSearchParams({
+                        autoPlayChapter: book.chapterId,
+                        timestamp: book.timestamp?.toString() || "0"
+                    });
+                    router.push(`/book/${book.bookId}?${params.toString()}`);
+                }}
+                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+            >
+                {/* Main Card Container */}
+                <Box className="p-4 rounded-2xl border border-outline-100 bg-background-0 shadow-soft-2">
+                    <HStack space="md" className="items-center">
+
+                        {/* Book/Audio Cover */}
+                        <Box className="shadow-sm">
+                            {book.image ? (
+                                <Image
+                                    source={book.image}
+                                    style={{ width: 64, height: 64, borderRadius: 12 }}
+                                    contentFit="cover"
+                                />
+                            ) : (
+                                <Box className="w-16 h-16 rounded-xl bg-background-200 items-center justify-center">
+                                    <IconSymbol name="music.note" size={24} color="#666" />
+                                </Box>
+                            )}
+                        </Box>
+
+                        {/* Text Content */}
+                        <VStack className="flex-1">
+                            <Heading size="xs" className="text-typography-900 leading-tight" numberOfLines={1}>
+                                {book.title}
+                            </Heading>
+                            <Text size="xs" className="text-typography-500 mb-2" numberOfLines={1}>
+                                {book.author}
+                            </Text>
+
+                            {/* Progress Section */}
+                            <VStack space="xs">
+                                <Box className="h-1.5 w-full bg-outline-100 rounded-full overflow-hidden">
+                                    <Box
+                                        style={{ width: `${pct}%` }}
+                                        className="h-full bg-primary-600"
+                                    />
+                                </Box>
+                                <Text size="2xl" className="text-typography-400">
+                                    {pct}% completed
+                                </Text>
+                            </VStack>
+                        </VStack>
+                    </HStack>
+                </Box>
+            </Pressable>
+        </Box>
+    );
+}
 
 export default function HomePage() {
     const { colorScheme } = useColorScheme();
@@ -115,6 +253,8 @@ export default function HomePage() {
                         />
                     </Box>
 
+                    <ContinuePlayingSection userEmail={userEmail} />
+
                     {/* Header and Sort Options */}
                     <HStack className="justify-between items-center mb-4">
                         <Heading size="lg" className="text-typography-700">Recent Books</Heading>
@@ -123,13 +263,13 @@ export default function HomePage() {
                                 onPress={() => setSortBy('date')}
                                 className={`px-3 py-1.5 rounded-full border ${sortBy === 'date' ? 'bg-primary-500 border-primary-500' : 'border-outline-200'}`}
                             >
-                                <Text className={`text-xs font-medium ${sortBy === 'date' ? 'text-white' : 'text-typography-500'}`}>Newest</Text>
+                                <Text className={`text-xs font-medium ${sortBy === 'date' ? 'text-black' : 'text-typography-500'}`}>Newest</Text>
                             </Pressable>
                             <Pressable
                                 onPress={() => setSortBy('alphabet')}
                                 className={`px-3 py-1.5 rounded-full border ${sortBy === 'alphabet' ? 'bg-primary-500 border-primary-500' : 'border-outline-200'}`}
                             >
-                                <Text className={`text-xs font-medium ${sortBy === 'alphabet' ? 'text-white' : 'text-typography-500'}`}>A-Z</Text>
+                                <Text className={`text-xs font-medium ${sortBy === 'alphabet' ? 'text-black' : 'text-typography-500'}`}>A-Z</Text>
                             </Pressable>
                         </HStack>
                     </HStack>

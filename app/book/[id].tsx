@@ -6,16 +6,24 @@ import { HStack } from "@/components/ui/hstack";
 import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
+import { useSession } from "@/context/auth";
 import { BOOKS, Chapter } from "@/data/books";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Mic, Play } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Pressable, ScrollView } from "react-native";
+import TrackPlayer from "react-native-track-player";
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5001";
 
 export default function BookDetails() {
-  const { id } = useLocalSearchParams();
+  const { id, autoPlayChapter, timestamp } = useLocalSearchParams<{
+    id: string;
+    autoPlayChapter?: string;
+    timestamp?: string;
+  }>();
   const router = useRouter();
   const { colorScheme } = useColorScheme();
 
@@ -26,6 +34,43 @@ export default function BookDetails() {
   // Global popup state
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
   const [isOpen, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { user } = useSession();
+  const userEmail = user?.email || "user@sunn.ai";
+
+  const hitAnalytics = async () => {
+    if (!activeChapter) return;
+
+    try {
+      let currentPosition = 0;
+      try {
+        const progress = await TrackPlayer.getProgress();
+        currentPosition = progress.position;
+      } catch (err) {
+        // TrackPlayer edge case if not fully set up
+      }
+
+      const response = await fetch(`${API_BASE_URL}/analytics`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail,
+          audio_id: activeChapter.id,
+          timestamp: Math.floor(currentPosition),
+        }),
+      });
+
+      if (response.ok) {
+        console.log(
+          "Analytics hit successfully for chapter:",
+          activeChapter.id,
+        );
+      }
+    } catch (error) {
+      console.error("Failed to send analytics:", error);
+    }
+  };
 
   if (!book) {
     return (
@@ -43,13 +88,50 @@ export default function BookDetails() {
     setOpen(true);
   };
 
+  useEffect(() => {
+    if (isOpen && activeChapter) {
+      // 1. Fire immediately when opened (optional, but usually desired)
+      hitAnalytics();
+
+      // 2. Use setInterval to repeat every 3 seconds
+      timerRef.current = setInterval(() => {
+        hitAnalytics();
+      }, 3000);
+
+      console.log("Started interval for chapter:", activeChapter.id);
+    } else {
+      // 3. Clear the interval if popup is closed
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+        console.log("Cleared analytics interval");
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [isOpen, activeChapter, userEmail]);
+
+  useEffect(() => {
+    if (autoPlayChapter && book) {
+      const chapterToPlay = book.chapters.find((c) => c.id === autoPlayChapter);
+      if (chapterToPlay && !isOpen) {
+        setActiveChapter(chapterToPlay);
+        setOpen(true);
+      }
+    }
+  }, [autoPlayChapter, book]);
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
 
       <Box className="flex-1 bg-background-0">
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-
           {/* Header Image */}
           <Box
             className={`w-full h-64 ${book.coverColor} items-center justify-center relative`}
@@ -93,11 +175,11 @@ export default function BookDetails() {
           </Box>
 
           <Box className="px-5 -mt-8">
-
             {/* Title */}
             <Box
-              className={`p-5 rounded-2xl ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
-                } border border-outline-100`}
+              className={`p-5 rounded-2xl ${
+                colorScheme === "dark" ? "bg-background-50" : "bg-white"
+              } border border-outline-100`}
             >
               <Heading size="2xl" className="text-center mb-1">
                 {book.title}
@@ -111,8 +193,9 @@ export default function BookDetails() {
               <HStack className="bg-background-100 rounded-full p-1 self-center w-full max-w-[200px]">
                 <Pressable
                   onPress={() => setVoice("Female")}
-                  className={`flex-1 py-2 rounded-full items-center ${voice === "Female" ? "bg-white" : ""
-                    }`}
+                  className={`flex-1 py-2 rounded-full items-center ${
+                    voice === "Female" ? "bg-white" : ""
+                  }`}
                 >
                   <HStack space="xs" className="items-center">
                     <Icon
@@ -171,6 +254,9 @@ export default function BookDetails() {
           chapter={activeChapter}
           isOpen={isOpen}
           onClose={() => setOpen(false)}
+          initialTimestamp={
+            activeChapter?.id === autoPlayChapter ? Number(timestamp) : 0
+          }
         />
       </Box>
     </>
@@ -191,8 +277,9 @@ function ChapterItem({
   return (
     <Pressable onPress={() => onPlay(chapter)}>
       <Box
-        className={`p-4 rounded-xl border border-outline-100 ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
-          } flex-row items-center justify-between`}
+        className={`p-4 rounded-xl border border-outline-100 ${
+          colorScheme === "dark" ? "bg-background-50" : "bg-white"
+        } flex-row items-center justify-between`}
       >
         <HStack space="md" className="items-center flex-1">
           <Box className="w-8 h-8 rounded-full bg-background-100 items-center justify-center">

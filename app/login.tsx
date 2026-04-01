@@ -4,10 +4,15 @@ import { Heading } from '@/components/ui/heading';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
 import { useSession } from '@/context/auth';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { BookHeadphones, Lock, Mail } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
 const SIGNIN_ENDPOINT = process.env.EXPO_PUBLIC_SIGNIN_ENDPOINT ?? (API_BASE_URL ? `${API_BASE_URL}/signin` : '');
@@ -20,6 +25,48 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        iosClientId: '496315060239-90atrbmshpriqesrh460smcmh1unlrna.apps.googleusercontent.com',
+        androidClientId: '496315060239-c5rdma3r8gr51tf12uolisimgh8en1uj.apps.googleusercontent.com',
+        webClientId: '496315060239-rb68ijmmm7ig8ir27ri6e809jgvr3omd.apps.googleusercontent.com',
+    });
+    useEffect(() => {
+        console.log('Redirect URI:', request?.redirectUri);
+    }, [request]);
+
+    useEffect(() => {
+        if (response?.type === 'success') {
+            const { authentication } = response;
+            handleGoogleAuthResponse(authentication?.accessToken);
+        } else if (response?.type === 'error') {
+            setError('Google Sign-In failed. Please try again.');
+        } else if (response?.type === 'cancel') {
+            setError('Sign-in cancelled.');
+        }
+    }, [response]);
+
+    const handleGoogleAuthResponse = async (accessToken?: string) => {
+        if (!accessToken) {
+            setError('Google Sign-In failed: no access token.');
+            return;
+        }
+        try {
+            const res = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            const user = await res.json();
+            if (user.email) {
+                await signIn(`session:${user.email}`);
+                setSuccess('Google Sign-In successful.');
+                router.replace('/');
+            } else {
+                setError('Failed to retrieve email from Google.');
+            }
+        } catch {
+            setError('Failed to fetch Google user info.');
+        }
+    };
 
     const extractMessage = (payload: unknown): string | null => {
         if (!payload || typeof payload !== 'object') return null;
@@ -81,7 +128,6 @@ export default function LoginScreen() {
                     setError(backendMessage);
                     return;
                 }
-
                 if (response.status === 401) {
                     setError('Invalid email or password.');
                     return;
@@ -209,6 +255,31 @@ export default function LoginScreen() {
                             </Button>
                         </View>
 
+                        {/* Divider */}
+                        <View className="flex-row items-center mt-6">
+                            <View className="flex-1 h-[1px] bg-[#313538]" />
+                            <Text className="text-[#9BA1A6] text-xs mx-4 font-medium uppercase tracking-wider">
+                                Or continue with
+                            </Text>
+                            <View className="flex-1 h-[1px] bg-[#313538]" />
+                        </View>
+
+                        {/* Google Sign-In Button */}
+                        <View className="mt-6">
+                            <Button
+                                size="lg"
+                                variant="outline"
+                                onPress={() => promptAsync()}
+                                disabled={loading || !request}
+                                style={styles.googleButton}
+                            >
+                                <FontAwesome name="google" size={20} color="#ECEDEE" style={{ marginRight: 12 }} />
+                                <ButtonText className="text-[#ECEDEE] font-semibold text-lg">
+                                    Continue with Google
+                                </ButtonText>
+                            </Button>
+                        </View>
+
                         {/* Bottom Footer */}
                         <View className="flex-row justify-center items-center mt-6">
                             <Text className="text-[#9BA1A6] text-sm">Don&apos;t have an account? </Text>
@@ -258,5 +329,15 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         borderWidth: 0,
+    },
+    googleButton: {
+        backgroundColor: 'transparent',
+        borderRadius: 16,
+        height: 56,
+        borderWidth: 1,
+        borderColor: '#313538',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
     }
 });

@@ -14,14 +14,19 @@ import { useColorScheme } from 'nativewind';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, TextInput } from 'react-native';
 
+
 export default function HomePage() {
     const { colorScheme } = useColorScheme();
     const router = useRouter();
-    const { signOut } = useSession();
+    const { signOut, user } = useSession();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'date' | 'alphabet'>('date');
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+    const userName = user?.given_name || 'Amrit';
+    const userEmail = user?.email || 'user@sunn.ai';
+    const userInitial = userName.charAt(0).toUpperCase();
 
     const filteredAndSortedBooks = useMemo(() => {
         let result = BOOKS;
@@ -77,10 +82,10 @@ export default function HomePage() {
                         <Pressable className="flex-1 bg-black/60 justify-center items-center" onPress={() => setIsProfileOpen(false)}>
                             <Pressable className="w-4/5 max-w-[340px] bg-[#202325] border border-[#313538] rounded-3xl p-6 items-center shadow-lg" onPress={(e) => e.stopPropagation()}>
                                 <Box className="w-16 h-16 bg-[#61dafb] rounded-full items-center justify-center mb-4 shadow-md">
-                                    <Text className="text-[#151718] font-bold text-3xl">U</Text>
+                                    <Text className="text-[#151718] font-bold text-3xl">{userInitial}</Text>
                                 </Box>
-                                <Heading size="xl" className="text-white mb-1">Library User</Heading>
-                                <Text size="sm" className="text-[#9BA1A6] mb-8 font-medium">user@sunn.ai</Text>
+                                <Heading size="xl" className="text-white mb-1">{userName}</Heading>
+                                <Text size="sm" className="text-[#9BA1A6] mb-8 font-medium">{userEmail}</Text>
 
                                 <Pressable
                                     className="w-full bg-[#EF4444]/10 py-3.5 rounded-2xl flex-row justify-center items-center border border-[#EF4444]/20"
@@ -96,7 +101,7 @@ export default function HomePage() {
                         </Pressable>
                     </Modal>
 
-                    <Heading size="2xl" className="mb-6">Welcome Back</Heading>
+                    <Heading size="2xl" className="mb-6">Welcome back {userName}</Heading>
 
                     {/* Search Bar */}
                     <Box className={`flex-row items-center px-4 py-3 rounded-full mb-6 border border-outline-100 ${colorScheme === 'dark' ? 'bg-background-50' : 'bg-white'}`}>

@@ -3,14 +3,14 @@ import { Button, ButtonText } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Text } from '@/components/ui/text';
 import { VStack } from '@/components/ui/vstack';
-import { useSession } from '@/context/auth';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-import { useRouter } from 'expo-router';
-import { BookHeadphones, Lock, Mail } from 'lucide-react-native';
-import React, { useState, useEffect } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { setStorageItemAsync, useSession } from '@/context/auth';
 import { FontAwesome } from '@expo/vector-icons';
+import * as Google from 'expo-auth-session/providers/google';
+import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { BookHeadphones, Lock, Mail } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -18,7 +18,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
 const SIGNIN_ENDPOINT = process.env.EXPO_PUBLIC_SIGNIN_ENDPOINT ?? (API_BASE_URL ? `${API_BASE_URL}/signin` : '');
 
 export default function LoginScreen() {
-    const { signIn } = useSession();
+    const { signIn, setUser } = useSession();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
@@ -31,6 +31,7 @@ export default function LoginScreen() {
         androidClientId: '496315060239-c5rdma3r8gr51tf12uolisimgh8en1uj.apps.googleusercontent.com',
         webClientId: '496315060239-rb68ijmmm7ig8ir27ri6e809jgvr3omd.apps.googleusercontent.com',
     });
+
     useEffect(() => {
         console.log('Redirect URI:', request?.redirectUri);
     }, [request]);
@@ -56,7 +57,10 @@ export default function LoginScreen() {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
             const user = await res.json();
+            console.log("amrit pandey", user)
             if (user.email) {
+                await setStorageItemAsync('user_data', JSON.stringify(user));
+                setUser(user);
                 await signIn(`session:${user.email}`);
                 setSuccess('Google Sign-In successful.');
                 router.replace('/');

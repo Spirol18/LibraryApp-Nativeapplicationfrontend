@@ -1,10 +1,7 @@
 import { Sidebar } from '@/components/Sidebar';
-import { Icon, MenuIcon } from '@/components/ui/icon';
-import { DrawerActions } from '@react-navigation/native';
 import { useNavigation } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import { useColorScheme } from 'nativewind';
-import { Pressable } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function DrawerLayout() {
@@ -24,18 +21,18 @@ export default function DrawerLayout() {
                     },
                 }}
             >
-                <Drawer.Screen
+                {/* <Drawer.Screen
                     name="(tabs)"
                     options={{
                         title: 'Library',
                         headerShown: true,
                         headerTitle: '',
+                        headerTitleAlign: 'center',
                         headerLeft: () => (
                             <Pressable onPress={() => navigation.dispatch(DrawerActions.openDrawer())} className="ml-4 p-2 bg-background-50 rounded-full border border-outline-100 shadow-sm">
                                 <Icon as={MenuIcon} size="md" className="text-typography-900" />
                             </Pressable>
                         ),
-                        headerTitleAlign: 'center',
                         headerStyle: {
                             backgroundColor: colorScheme === 'dark' ? '#181719' : '#FFFFFF',
                             shadowColor: 'transparent',
@@ -43,7 +40,7 @@ export default function DrawerLayout() {
                             elevation: 0,
                         }
                     }}
-                />
+                /> */}
             </Drawer>
         </GestureHandlerRootView>
     );

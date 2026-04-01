@@ -21,7 +21,7 @@ export default function BookDetails() {
 
   const book = BOOKS.find((b) => b.id === id);
 
-  const [voice, setVoice] = useState<"Male" | "Female">("Male");
+  const [voice, setVoice] = useState<"Female">("Female");
 
   // Global popup state
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
@@ -110,27 +110,6 @@ export default function BookDetails() {
               {/* Voice Toggle */}
               <HStack className="bg-background-100 rounded-full p-1 self-center w-full max-w-[200px]">
                 <Pressable
-                  onPress={() => setVoice("Male")}
-                  className={`flex-1 py-2 rounded-full items-center ${voice === "Male" ? "bg-white" : ""
-                    }`}
-                >
-                  <HStack space="xs" className="items-center">
-                    <Icon
-                      as={Mic}
-                      size="xs"
-                      className={
-                        voice === "Male"
-                          ? "text-primary-500"
-                          : "text-typography-400"
-                      }
-                    />
-                    <Text size="xs" className="font-bold">
-                      Male
-                    </Text>
-                  </HStack>
-                </Pressable>
-
-                <Pressable
                   onPress={() => setVoice("Female")}
                   className={`flex-1 py-2 rounded-full items-center ${voice === "Female" ? "bg-white" : ""
                     }`}
@@ -210,7 +189,7 @@ function ChapterItem({
   onPlay: (chapter: Chapter) => void;
 }) {
   return (
-    <Pressable>
+    <Pressable onPress={() => onPlay(chapter)}>
       <Box
         className={`p-4 rounded-xl border border-outline-100 ${colorScheme === "dark" ? "bg-background-50" : "bg-white"
           } flex-row items-center justify-between`}
@@ -234,7 +213,7 @@ function ChapterItem({
         <Button
           size="sm"
           action="secondary"
-          className="rounded-full w-10 h-10 p-0 items-center justify-center"
+          className="rounded-full bg-primary-500 w-10 h-10 p-0 items-center justify-center"
           onPress={() => onPlay(chapter)}
         >
           <ButtonIcon as={Play} />

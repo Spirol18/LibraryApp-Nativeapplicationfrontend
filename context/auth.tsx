@@ -6,11 +6,15 @@ const AuthContext = React.createContext<{
     signIn: (token: string) => Promise<void>;
     signOut: () => Promise<void>;
     session?: string | null;
+    user?: any | null;
+    setUser: (user: any | null) => void;
     isLoading: boolean;
 }>({
     signIn: async () => { },
     signOut: async () => { },
+    setUser: () => { },
     session: null,
+    user: null,
     isLoading: true,
 });
 
@@ -28,7 +32,21 @@ export function useSession() {
 
 // We use a custom utility to handle web and native separately.
 // SecureStore is not supported on the web out of the box.
-async function setStorageItemAsync(key: string, value: string | null) {
+export async function getStorageItemAsync(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+        try {
+            if (typeof localStorage !== 'undefined') {
+                return localStorage.getItem(key);
+            }
+        } catch (e) {
+            console.error('Local storage is unavailable:', e);
+        }
+        return null;
+    } else {
+        return await SecureStore.getItemAsync(key);
+    }
+}
+export async function setStorageItemAsync(key: string, value: string | null) {
     if (Platform.OS === 'web') {
         try {
             if (value === null) {
@@ -50,25 +68,30 @@ async function setStorageItemAsync(key: string, value: string | null) {
 
 export function SessionProvider(props: React.PropsWithChildren) {
     const [session, setSession] = React.useState<string | null>(null);
+    const [user, setUser] = React.useState<any | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
-        // Platform specific logic for getting items.
-        if (Platform.OS === 'web') {
+        async function loadStorage() {
             try {
-                if (typeof localStorage !== 'undefined') {
-                    setSession(localStorage.getItem('session'));
+                const [sessionValue, userValue] = await Promise.all([
+                    getStorageItemAsync('session'),
+                    getStorageItemAsync('user_data')
+                ]);
+                
+                setSession(sessionValue);
+                if (userValue) {
+                    try {
+                        setUser(JSON.parse(userValue));
+                    } catch (e) {
+                        console.error('Failed to parse user data:', e);
+                    }
                 }
-            } catch (e) {
-                console.error('Local storage is unavailable:', e);
-            }
-            setIsLoading(false);
-        } else {
-            SecureStore.getItemAsync('session').then((value) => {
-                setSession(value);
+            } finally {
                 setIsLoading(false);
-            });
+            }
         }
+        loadStorage();
     }, []);
 
     return (
@@ -80,9 +103,13 @@ export function SessionProvider(props: React.PropsWithChildren) {
                 },
                 signOut: async () => {
                     await setStorageItemAsync('session', null);
+                    await setStorageItemAsync('user_data', null);
                     setSession(null);
+                    setUser(null);
                 },
                 session,
+                user,
+                setUser,
                 isLoading,
             }}
         >

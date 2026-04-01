@@ -10,6 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.sufal.libraryapp",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
@@ -26,6 +27,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "package": "com.sufal.libraryapp",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -47,11 +49,24 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.496315060239-90atrbmshpriqesrh460smcmh1unlrna",
+          "androidClientId": "496315060239-c5rdma3r8gr51tf12uolisimgh8en1uj.apps.googleusercontent.com"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6127ad98-a2b6-4288-a20b-7f0f783aa94e"
+      }
     }
   }
 }
